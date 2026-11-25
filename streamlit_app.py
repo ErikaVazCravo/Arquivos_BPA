@@ -77,6 +77,11 @@ def apply_fields(line, fields, values):
     return line
 
 
+def document_provided(value):
+    value = value.strip()
+    return bool(value) and any(char != '0' for char in value)
+
+
 def save_changes(bpa, index, header_index, record_values, header_values):
     line = bpa.lines[index]
     typ = bpa.record_type(line)
@@ -88,7 +93,7 @@ def save_changes(bpa, index, header_index, record_values, header_values):
     if bpa.has_other_key(typ, cnes, fl, seq, index):
         raise ValueError(f"Já existe outro registro deste tipo com CNES {cnes}, folha {fl} e sequência {seq}.")
     if typ == '03':
-        if record_values['prd_cnspac'].strip() and record_values['prd_cpf_pcnte'].strip():
+        if document_provided(record_values['prd_cnspac']) and document_provided(record_values['prd_cpf_pcnte']):
             raise ValueError("Informe apenas um documento do paciente: CPF ou CNS.")
         for key, label in [('prd_situacao_rua', 'Pessoa em situação de rua'), ('prd_sem_cpf', 'Pessoa sem CPF/Registro Civil')]:
             value = record_values[key].strip().upper()
