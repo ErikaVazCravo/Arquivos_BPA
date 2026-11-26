@@ -55,11 +55,11 @@ def load_file(upload):
     return st.session_state.bpa
 
 
-def render_fields(line, fields, prefix):
+def render_fields(line, fields, prefix, columns=3):
     values = {}
-    for start in range(0, len(fields), 3):
-        cols = st.columns(3)
-        for col, field in zip(cols, fields[start:start + 3]):
+    for start in range(0, len(fields), columns):
+        cols = st.columns(columns)
+        for col, field in zip(cols, fields[start:start + columns]):
             with col:
                 values[field.key] = st.text_input(
                     field.label, value=extract_field(line, field), max_chars=field.size,
@@ -175,7 +175,16 @@ if index is not None:
     with st.form("edit_record"):
         tab_record, tab_header = st.tabs(["Dados do registro", "Cabeçalho do arquivo"])
         with tab_record:
-            record_values = render_fields(line, fields, prefix)
+            if rt == '03':
+                patient_keys = ('prd_nmpac', 'prd_dtnasc', 'prd_cnspac', 'prd_cpf_pcnte')
+                by_key = {field.key: field for field in fields}
+                with st.container(border=True):
+                    st.markdown("#### Identifica??o do paciente")
+                    record_values = render_fields(line, [by_key[key] for key in patient_keys], prefix, columns=2)
+                st.markdown("#### Demais dados do registro")
+                record_values.update(render_fields(line, [field for field in fields if field.key not in patient_keys], prefix))
+            else:
+                record_values = render_fields(line, fields, prefix)
         with tab_header:
             st.caption("Linhas, folhas e campo de controle são recalculados automaticamente.")
             header_values = render_fields(bpa.lines[header_index], HEADER_FIELDS, prefix + '_header')
