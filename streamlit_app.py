@@ -204,5 +204,13 @@ if index is not None:
                 st.rerun()
             except (ValueError, UnicodeEncodeError) as exc:
                 st.error(f"Não foi possível aplicar as alterações: {exc}")
-    if st.session_state.revision > 1:
-        st.success("Alterações aplicadas à cópia em edição. Baixe o arquivo na barra lateral.")
+    if st.session_state.save_notice:
+        st.success("Alterações aplicadas. Você pode consultar outro registro ou baixar o arquivo.")
+
+with download_area:
+    count = len(st.session_state.edited_records)
+    st.caption(f"Registros editados nesta sessão: {count}")
+    original = Path(st.session_state.filename)
+    download_name = f"{original.stem}_editado{original.suffix}"
+    st.download_button("Baixar arquivo BPA", export_bytes(bpa), file_name=download_name,
+                       mime="application/octet-stream", use_container_width=True, type="primary")
