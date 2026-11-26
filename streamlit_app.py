@@ -211,6 +211,10 @@ with download_area:
     count = len(st.session_state.edited_records)
     st.caption(f"Registros editados nesta sessão: {count}")
     original = Path(st.session_state.filename)
-    download_name = f"{original.stem}_editado{original.suffix}"
-    st.download_button("Baixar arquivo BPA", export_bytes(bpa), file_name=download_name,
-                       mime="application/octet-stream", use_container_width=True, type="primary")
+    download_data = export_bytes(bpa)
+    download_hash = hashlib.sha256(download_data).hexdigest()
+    download_name = f"{original.stem}_editado_{download_hash[:8]}{original.suffix}"
+    st.caption(f"Identificador do arquivo: {download_hash[:8]}")
+    st.download_button("Baixar arquivo BPA", download_data, file_name=download_name,
+                       key=f"download_{download_hash}", mime="application/octet-stream",
+                       use_container_width=True, type="primary")
