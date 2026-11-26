@@ -97,7 +97,7 @@ BPAI_FIELDS = [
     F("prd_flh", "FL - Folha", 45, 47, "SIM", "Domínio 001..999", "NUM"),
     F("prd_seq", "SEQ - Sequência", 48, 49, "", "Domínio 01..99", "NUM"),
     F("prd_pa", "Procedimento", 50, 59, "", "Código do procedimento ambulatorial, 10 dígitos", "NUM"),
-    F("prd_cnspac", "CNS do paciente", 60, 74, "COND.", "Obrigatório quando o procedimento exigir. Se CPF for informado, não informar CNS.", "NUM"),
+    F("prd_cnspac", "CNS do paciente", 60, 74, "COND.", "Obrigatório quando o procedimento exigir. CPF e CNS podem ser mantidos quando informados.", "NUM"),
     F("prd_sexo", "Sexo", 75, 75, "", "M = Masculino; F = Feminino", "CHAR"),
     F("prd_ibge", "Município de residência (IBGE)", 76, 81, "", "Código IBGE", "NUM"),
     F("prd_cid", "CID-10", 82, 85, "", "CID-10", "CHAR"),
@@ -125,7 +125,7 @@ BPAI_FIELDS = [
     F("prd_ddtel_pcnte", "Telefone", 278, 288, "", "Quando preenchido, somente números", "NUM"),
     F("prd_email_pcnte", "E-mail", 289, 328, "", "E-mail do paciente", "CHAR"),
     F("prd_ine", "INE", 329, 338, "SIM", "Identificação Nacional de Equipes", "NUM"),
-    F("prd_cpf_pcnte", "CPF do paciente", 339, 349, "COND.", "Obrigatório quando o procedimento exigir. Se CPF for informado, não informar CNS.", "NUM"),
+    F("prd_cpf_pcnte", "CPF do paciente", 339, 349, "COND.", "Obrigatório quando o procedimento exigir. CPF e CNS podem ser mantidos quando informados.", "NUM"),
     F("prd_situacao_rua", "Pessoa em situação de rua", 350, 350, "", "N = Não; S = Sim; válido a partir de 12/2024", "CHAR"),
     F("prd_sem_cpf", "Pessoa sem CPF/Registro Civil", 351, 351, "", "N = Não; S = Sim; válido a partir de 07/2026", "CHAR"),
 ]

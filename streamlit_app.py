@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import tempfile
 from html import escape
 from pathlib import Path
@@ -34,6 +35,22 @@ button[kind="primary"] { background:#216347; border-color:#216347; color:white; 
 </style>
 <div class="bpa-header"><span class="eyebrow">Gestão de arquivos BPA</span><h1>Editor BPA</h1><p>Consulte e edite sua produção ambulatorial em um só lugar.</p></div>
 """, unsafe_allow_html=True)
+
+
+def parse_occurrences(data):
+    """Lê ocorrências BPA-I com CNES e chave informados pelo SIA."""
+    lines = data.decode("cp850", errors="replace").splitlines()
+    cnes = None
+    occurrences = []
+    for line in lines:
+        facility = re.match(r"\s*CNES\s*:\s*(\d{7})\b", line, re.I)
+        if facility:
+            cnes = facility.group(1)
+            continue
+        record = re.match(r"\s*BPAI\s+\d{2}/\d{4}\s+(\d{3})/(\d{2})\s+\d{10}\s+\S+\s+\S+\s+(.+?)\s*$", line, re.I)
+        if cnes and record:
+            occurrences.append((cnes, record.group(1), record.group(2), record.group(3).strip()))
+    return occurrences
 
 
 def load_file(upload):
@@ -93,8 +110,6 @@ def save_changes(bpa, index, header_index, record_values, header_values):
     if bpa.has_other_key(typ, cnes, fl, seq, index):
         raise ValueError(f"Já existe outro registro deste tipo com CNES {cnes}, folha {fl} e sequência {seq}.")
     if typ == '03':
-        if document_provided(record_values['prd_cnspac']) and document_provided(record_values['prd_cpf_pcnte']):
-            raise ValueError("Informe apenas um documento do paciente: CPF ou CNS.")
         for key, label in [('prd_situacao_rua', 'Pessoa em situação de rua'), ('prd_sem_cpf', 'Pessoa sem CPF/Registro Civil')]:
             value = record_values[key].strip().upper()
             if value not in ('', 'S', 'N'):
@@ -120,6 +135,7 @@ with st.sidebar:
     st.header("Arquivo BPA")
     upload = st.file_uploader("Selecione o arquivo", help="São aceitos arquivos BPA com qualquer extensão.")
     st.caption("O arquivo original permanece no seu computador. Baixe uma cópia após editar.")
+    report_upload = st.file_uploader("Relatório de ocorrências do SIA", help="Opcional: arquivo R0350.OUT.", key="report_upload")
 
 if upload is None:
     st.markdown('<div class="welcome"><h2>Bem-vindo ao Editor BPA</h2>Selecione um arquivo na barra lateral para consultar registros BPA-I e BPA-C, editar seus dados e baixar o resultado.</div>', unsafe_allow_html=True)
@@ -132,6 +148,15 @@ except (ValueError, OSError) as exc:
 
 st.session_state.setdefault("edited_records", set())
 st.session_state.setdefault("save_notice", False)
+
+if report_upload is not None:
+    occurrences = parse_occurrences(report_upload.getvalue())
+    keys = {(line[2:9], *bpa.get_fl_seq(line, '03')) for line in bpa.lines if line.startswith('03')}
+    matched = [item for item in occurrences if item[:3] in keys]
+    with st.sidebar:
+        st.caption(f"Ocorrências BPA-I no relatório: {len(occurrences)}")
+        st.caption(f"Ocorrências com registro no BPA: {len(matched)}")
+        st.caption("A consulta ao PEC e as correções automáticas ainda não estão disponíveis.")
 
 production = [(i, line) for i, line in enumerate(bpa.lines) if bpa.record_type(line) in ('02', '03')]
 with st.sidebar:
