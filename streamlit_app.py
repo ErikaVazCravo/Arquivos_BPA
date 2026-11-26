@@ -51,7 +51,7 @@ def load_file(upload):
             raise ValueError("Cabeçalho BPA (01#BPA#) não encontrado no arquivo.")
         if not any(bpa.record_type(line) in ("02", "03") for line in bpa.lines):
             raise ValueError("O arquivo não contém registros BPA-C ou BPA-I.")
-        st.session_state.update(bpa=bpa, digest=digest, filename=upload.name, selected=None, revision=0)
+        st.session_state.update(bpa=bpa, digest=digest, filename=upload.name, selected=None, revision=0, edited_records=set(), save_notice=False)
     return st.session_state.bpa
 
 
@@ -130,11 +130,14 @@ except (ValueError, OSError) as exc:
     st.error(f"Não foi possível abrir o arquivo: {exc}")
     st.stop()
 
+st.session_state.setdefault("edited_records", set())
+st.session_state.setdefault("save_notice", False)
+
 production = [(i, line) for i, line in enumerate(bpa.lines) if bpa.record_type(line) in ('02', '03')]
 with st.sidebar:
     st.success(f"Arquivo carregado: {upload.name}")
     st.metric("Registros de produção", len(production))
-    st.download_button("Baixar arquivo BPA", export_bytes(bpa), file_name=st.session_state.filename, mime="application/octet-stream", use_container_width=True, type="primary")
+    download_area = st.container()
 
 st.subheader("Consultar registro")
 with st.container(border=True):
@@ -156,6 +159,7 @@ with st.container(border=True):
             if not matches:
                 raise ValueError("Nenhum registro encontrado para os dados informados.")
             st.session_state.selected = matches[0]
+            st.session_state.save_notice = False
             st.session_state.revision += 1
             if len(matches) > 1:
                 st.warning(f"Foram encontrados {len(matches)} registros com essa chave. O primeiro será exibido.")
@@ -179,7 +183,7 @@ if index is not None:
                 patient_keys = ('prd_nmpac', 'prd_dtnasc', 'prd_cnspac', 'prd_cpf_pcnte')
                 by_key = {field.key: field for field in fields}
                 with st.container(border=True):
-                    st.markdown("#### Identifica??o do paciente")
+                    st.markdown("#### Identificação do paciente")
                     record_values = render_fields(line, [by_key[key] for key in patient_keys], prefix, columns=2)
                 st.markdown("#### Demais dados do registro")
                 record_values.update(render_fields(line, [field for field in fields if field.key not in patient_keys], prefix))
@@ -191,7 +195,11 @@ if index is not None:
         submitted = st.form_submit_button("Aplicar alterações", type="primary")
         if submitted:
             try:
+                previous_line = bpa.lines[index]
                 save_changes(bpa, index, header_index, record_values, header_values)
+                if bpa.lines[index] != previous_line:
+                    st.session_state.edited_records.add(index)
+                st.session_state.save_notice = True
                 st.session_state.revision += 1
                 st.rerun()
             except (ValueError, UnicodeEncodeError) as exc:
